@@ -46,27 +46,27 @@ DEFAULT_POWER = configuration['default_power']
 ACTION_TYPES = ['always_run', 'move', 'sleep', 'turn', 'run_motor']
 
 
-def convertAlwaysRunActionToCode(action) -> str:
-    return f'vexiq.Motor({action["port"]}, {action["reverse_polarity"]}).run_until({action["value"]})'
+def convertAlwaysRunActionToCode(action):
+    return 'vexiq.Motor(' + action["port"] + ', ' + action["reverse_polarity"] + ').run_until(' + action["value"] + ')'
 
 
-def convertMoveActionToCode(action) -> str:
-    return f'dt.drive_until({DEFAULT_POWER}, {action["value"]})'
+def convertMoveActionToCode(action):
+    return 'dt.drive_until(' + DEFAULT_POWER + ', ' + action['value'] + ')'
 
 
-def convertSleepActionToCode(action) -> str:
-    return f'sys.sleep({action["value"]})'
+def convertSleepActionToCode(action):
+    return 'sys.sleep(' + action['value'] + ')'
 
 
-def convertTurnActionToCode(action) -> str:
-    return f'dt.turn_until({DEFAULT_POWER}, {action["value"]})'
+def convertTurnActionToCode(action):
+    return 'dt.turn_until(' + DEFAULT_POWER + ', ' + action['value'] + ')'
 
 
-def convertMotorToCode(motor, value) -> str:
-    return f'vexiq.Motor({motor["port"]}, {motor["reverse_polarity"]}).run_until({DEFAULT_POWER}, {value})'
+def convertMotorToCode(motor, value):
+    return 'vexiq.Motor(' + motor["port"] + ', ' + motor["reverse_polarity"] + ').run_until(' + DEFAULT_POWER + ', ' + value + ')'
 
 
-def convertMotorRunToCode(action) -> str:
+def convertMotorRunToCode(action):
     code = ''
 
     isDual = action['isDual']
@@ -88,15 +88,18 @@ def convertMotorRunToCode(action) -> str:
     return code
 
 
-def convertCode(actions, config) -> str:
+def convertCode(actions, config):
     code = ''
 
     drivetrain = config['motors']['drivetrain']
 
-    left_motor = f'vexiq.Motor({drivetrain["left"]["port"]}, {drivetrain["left"]["reverse_polarity"]})'
-    right_motor = f'vexiq.Motor({drivetrain["right"]["port"]}, {drivetrain["right"]["reverse_polarity"]})'
+    left_motor = 'vexiq.Motor(' + drivetrain["left"]["port"] + \
+        ', ' + drivetrain["left"]["reverse_polarity"] + ')'
+    right_motor = 'vexiq.Motor(' + drivetrain["right"]["port"] + \
+        ', ' + drivetrain["right"]["reverse_polarity"] + ')'
 
-    code += f'import drivetrain\nimport vexiq\nimport sys\n\ndt = drivetrain.Drivetrain({left_motor}, {right_motor}, 200, 176)\n\n'
+    code += 'import drivetrain\nimport vexiq\nimport sys\n\ndt = drivetrain.Drivetrain(' + \
+        left_motor + ', ' + right_motor + ', 200, 176)\n\n'
 
     for action in actions:
         actionType = action['type']
@@ -131,8 +134,252 @@ def log(message, row=1, column=1):
     vexiq.lcd_write(message, row, column)
 
 
-async def main():
+def update(value):
+    log('Select a value')
+    log('Current >> ' + value, 2, 1)
 
+
+def actionSelection(_callback=None):
+    typesOfActions = ['Move', 'Wait', 'Turn', 'Run Motor']
+
+    CURRENT_ACTION = typesOfActions[1]
+
+    while True:
+        if left():
+            CURRENT_ACTION = typesOfActions[(typesOfActions.index(
+                CURRENT_ACTION) - 1) % len(typesOfActions)]
+            update(CURRENT_ACTION)
+        elif right():
+            CURRENT_ACTION = typesOfActions[(typesOfActions.index(
+                CURRENT_ACTION) + 1) % len(typesOfActions)]
+            update(CURRENT_ACTION)
+        elif select():
+            if _callback != None:
+                _callback(CURRENT_ACTION)
+
+            return CURRENT_ACTION
+
+        sys.sleep(0.01)
+
+
+def portSelection(_callback=None):
+    CURRENT_PORT = 0
+
+    while True:
+        if left():
+            if CURRENT_PORT <= 0:
+                CURRENT_PORT = 0
+            else:
+                CURRENT_PORT -= 1
+            update(CURRENT_PORT)
+        elif right():
+            if CURRENT_PORT >= 12:
+                CURRENT_PORT = 12
+            else:
+                CURRENT_PORT += 1
+            update(CURRENT_PORT)
+        elif select():
+            if _callback != None:
+                _callback(CURRENT_PORT)
+
+            return CURRENT_PORT
+
+        sys.sleep(0.01)
+
+
+def drivetrainValueSelection(_callback=None):
+    CURRENT_VALUE = 0
+
+    while True:
+        if left():
+            CURRENT_VALUE -= 1
+            update(CURRENT_VALUE)
+            dt.drive(DEFAULT_POWER, -1)
+        elif right():
+            CURRENT_VALUE += 1
+            update(CURRENT_VALUE)
+            dt.drive(DEFAULT_POWER, 1)
+        elif select():
+            if _callback != None:
+                _callback(CURRENT_VALUE)
+
+            return CURRENT_VALUE
+
+        sys.sleep(0.01)
+
+
+def waitValueSelection(_callback=None):
+    CURRENT_VALUE = 0
+
+    while True:
+        if left():
+            CURRENT_VALUE -= 1
+            update(CURRENT_VALUE)
+        elif right():
+            CURRENT_VALUE += 1
+            update(CURRENT_VALUE)
+        elif select():
+            if _callback != None:
+                _callback(CURRENT_VALUE)
+
+            return CURRENT_VALUE
+
+        sys.sleep(0.01)
+
+
+def turnValueSelection(_callback=None):
+    CURRENT_VALUE = 0
+
+    while True:
+        if left():
+            CURRENT_VALUE -= 1
+            update(CURRENT_VALUE)
+
+            dt.turn_until(DEFAULT_POWER, -1)
+        elif right():
+            CURRENT_VALUE += 1
+            update(CURRENT_VALUE)
+
+            dt.turn_until(DEFAULT_POWER, 1)
+        elif select():
+            if _callback != None:
+                _callback(CURRENT_VALUE)
+
+            return CURRENT_VALUE
+
+        sys.sleep(0.01)
+
+
+def motorNameSelection(_callback=None):
+    motors = configuration['motors']['other'].keys()
+
+    CURRENT_MOTOR = motors[0]
+
+    while True:
+        if left():
+            CURRENT_MOTOR = motors[(motors.index(
+                CURRENT_MOTOR) - 1) % len(motors)]
+            update(CURRENT_MOTOR)
+        elif right():
+            CURRENT_MOTOR = motors[(motors.index(
+                CURRENT_MOTOR) + 1) % len(motors)]
+            update(CURRENT_MOTOR)
+        elif select():
+            if _callback != None:
+                _callback(CURRENT_MOTOR)
+
+            return CURRENT_MOTOR
+
+        sys.sleep(0.01)
+
+
+def motorValueSelection(name, _callback=None):
+    motor = configuration['motors']['other'][name]
+
+    isDual = True if motor['type'] == 'dual' else False
+
+    CURRENT_VALUE = 0
+
+    while True:
+        if isDual:
+            motorOne = vexiq.Motor(
+                motor['motors'][0]['port'], motor['motors'][0]['reverse_polarity'])
+            motorTwo = vexiq.Motor(
+                motor['motors'][1]['port'], motor['motors'][1]['reverse_polarity'])
+
+            if left():
+                CURRENT_VALUE -= 1
+                update(CURRENT_VALUE)
+
+                motorOne.run_until(DEFAULT_POWER, -1)
+                motorTwo.run_until(DEFAULT_POWER, -1)
+            elif right():
+                CURRENT_VALUE += 1
+                update(CURRENT_VALUE)
+
+                motorOne.run_until(DEFAULT_POWER, 1)
+                motorTwo.run_until(DEFAULT_POWER, 1)
+            elif select():
+                if _callback != None:
+                    _callback(CURRENT_VALUE, name)
+
+                return CURRENT_VALUE
+        else:
+            motorOne = vexiq.Motor(
+                motor['motors'][0]['port'], motor['motors'][0]['reverse_polarity'])
+
+            if left():
+                CURRENT_VALUE -= 1
+                update(CURRENT_VALUE)
+
+                motorOne.run_until(DEFAULT_POWER, -1)
+            elif right():
+                CURRENT_VALUE += 1
+                update(CURRENT_VALUE)
+
+                motorOne.run_until(DEFAULT_POWER, 1)
+            elif select():
+                if _callback != None:
+                    _callback(CURRENT_VALUE, name)
+
+                return CURRENT_VALUE
+
+
+def drivetrainValueSelectionCallback(value):
+    action = {
+        'type': 'move',
+                'value': int(value)
+    }
+
+    actions.append(action)
+
+
+def waitValueSelectionCallback(value):
+    action = {
+        'type': 'wait',
+        'value': int(value)
+    }
+
+    actions.append(action)
+
+
+def turnValueSelectionCallback(value):
+    action = {
+        'type': 'turn',
+        'value': int(value)
+    }
+
+    actions.append(action)
+
+
+def motorValueSelectionCallback(value, name):
+    action = {
+        'type': 'run_motor',
+        'name': name,
+        'isDual': True if configuration['motors']['other'][name]['type'] == 'dual' else False,
+        'motors': configuration['motors']['other'][name]['motors'],
+        'value': int(value)
+    }
+
+    actions.append(action)
+
+
+def motorNameSelectionCallback(name):
+    motorValueSelection(name, motorValueSelectionCallback)
+
+
+def actionSelectCallback(actionType):
+    if actionType == 'Move':
+        drivetrainValueSelection(drivetrainValueSelectionCallback)
+    elif actionType == 'Wait':
+        waitValueSelection(waitValueSelectionCallback)
+    elif actionType == 'Turn':
+        turnValueSelection(turnValueSelectionCallback)
+    elif actionType == 'run_motor':
+        motorNameSelection(motorNameSelectionCallback)
+
+
+def main():
     left = joystick.bLup
     select = joystick.bRdown
     right = joystick.bRup
@@ -148,230 +395,10 @@ async def main():
 
     dt = drivetrain.Drivetrain(leftDT, rightDT, 200, 176)
 
-    async def actionSelection():
-        typesOfActions = ['Move', 'Wait', 'Turn', 'Run Motor']
-
-        CURRENT_ACTION = typesOfActions[1]
-
-        def update(action):
-            log('Select an action')
-            log(f'Current >> {CURRENT_ACTION}', 2, 1)
-
-        while True:
-            if left():
-                CURRENT_ACTION = typesOfActions[(typesOfActions.index(
-                    CURRENT_ACTION) - 1) % len(typesOfActions)]
-                update(CURRENT_ACTION)
-            elif right():
-                CURRENT_ACTION = typesOfActions[(typesOfActions.index(
-                    CURRENT_ACTION) + 1) % len(typesOfActions)]
-                update(CURRENT_ACTION)
-            elif select():
-                return CURRENT_ACTION
-
-            sys.sleep(0.01)
-
-    async def portSelection():
-        CURRENT_PORT = 0
-
-        def update(port):
-            log('Select a port')
-            log(f'Current >> {port}', 2, 1)
-
-        while True:
-            if left():
-                if CURRENT_PORT <= 0:
-                    CURRENT_PORT = 0
-                else:
-                    CURRENT_PORT -= 1
-                update(CURRENT_PORT)
-            elif right():
-                if CURRENT_PORT >= 12:
-                    CURRENT_PORT = 12
-                else:
-                    CURRENT_PORT += 1
-                update(CURRENT_PORT)
-            elif select():
-                return CURRENT_PORT
-
-            sys.sleep(0.01)
-
-    async def drivetrainValueSelection():
-        CURRENT_VALUE = 0
-
-        def update(value):
-            log('Select a value')
-            log(f'Current >> {value}', 2, 1)
-
-        while True:
-            if left():
-                CURRENT_VALUE -= 1
-                update(CURRENT_VALUE)
-                dt.drive(DEFAULT_POWER, -1)
-            elif right():
-                CURRENT_VALUE += 1
-                update(CURRENT_VALUE)
-                dt.drive(DEFAULT_POWER, 1)
-            elif select():
-                return CURRENT_VALUE
-
-            sys.sleep(0.01)
-
-    async def waitValueSelection():
-        CURRENT_VALUE = 0
-
-        def update(value):
-            log('Select a value')
-            log(f'Current >> {value}', 2, 1)
-
-        while True:
-            if left():
-                CURRENT_VALUE -= 1
-                update(CURRENT_VALUE)
-            elif right():
-                CURRENT_VALUE += 1
-                update(CURRENT_VALUE)
-            elif select():
-                return CURRENT_VALUE
-
-            sys.sleep(0.01)
-
-    async def turnValueSelection():
-        CURRENT_VALUE = 0
-
-        def update(value):
-            log('Select a value')
-            log(f'Current >> {value}', 2, 1)
-
-        while True:
-            if left():
-                CURRENT_VALUE -= 1
-                update(CURRENT_VALUE)
-
-                dt.turn_until(DEFAULT_POWER, -1)
-            elif right():
-                CURRENT_VALUE += 1
-                update(CURRENT_VALUE)
-
-                dt.turn_until(DEFAULT_POWER, 1)
-            elif select():
-                return CURRENT_VALUE
-
-            sys.sleep(0.01)
-
-    async def motorNameSelection():
-        motors = configuration['motors']['other'].keys()
-
-        CURRENT_MOTOR = motors[0]
-
-        def update(motor):
-            log('Select a motor')
-            log(f'Current >> {motor}', 2, 1)
-
-        while True:
-            if left():
-                CURRENT_MOTOR = motors[(motors.index(
-                    CURRENT_MOTOR) - 1) % len(motors)]
-                update(CURRENT_MOTOR)
-            elif right():
-                CURRENT_MOTOR = motors[(motors.index(
-                    CURRENT_MOTOR) + 1) % len(motors)]
-                update(CURRENT_MOTOR)
-            elif select():
-                return CURRENT_MOTOR
-
-            sys.sleep(0.01)
-
-    async def motorValueSelection(name):
-        motor = configuration['motors']['other'][name]
-
-        isDual = True if motor['type'] == 'dual' else False
-
-        def update(value):
-            log('Select a value')
-            log(f'Current >> {value}', 2, 1)
-
-        CURRENT_VALUE = 0
-
-        while True:
-            if isDual:
-                motorOne = vexiq.Motor(
-                    motor['motors'][0]['port'], motor['motors'][0]['reverse_polarity'])
-                motorTwo = vexiq.Motor(
-                    motor['motors'][1]['port'], motor['motors'][1]['reverse_polarity'])
-
-                if left():
-                    CURRENT_VALUE -= 1
-                    update(CURRENT_VALUE)
-
-                    motorOne.run_until(DEFAULT_POWER, -1)
-                    motorTwo.run_until(DEFAULT_POWER, -1)
-                elif right():
-                    CURRENT_VALUE += 1
-                    update(CURRENT_VALUE)
-
-                    motorOne.run_until(DEFAULT_POWER, 1)
-                    motorTwo.run_until(DEFAULT_POWER, 1)
-                elif select():
-                    return CURRENT_VALUE
-            else:
-                motorOne = vexiq.Motor(
-                    motor['motors'][0]['port'], motor['motors'][0]['reverse_polarity'])
-
-                if left():
-                    CURRENT_VALUE -= 1
-                    update(CURRENT_VALUE)
-
-                    motorOne.run_until(DEFAULT_POWER, -1)
-                elif right():
-                    CURRENT_VALUE += 1
-                    update(CURRENT_VALUE)
-
-                    motorOne.run_until(DEFAULT_POWER, 1)
-                elif select():
-                    return CURRENT_VALUE
-
-    actionType = await actionSelection()
-
-    if actionType == 'Move':
-        value = await drivetrainValueSelection()
-        action = {
-            'type': 'move',
-            'value': int(value)
-        }
-
-        actions.append(action)
-    elif actionType == 'Wait':
-        value = await waitValueSelection()
-        action = {
-            'type': 'wait',
-            'value': int(value)
-        }
-
-        actions.append(action)
-    elif actionType == 'Turn':
-        value = await turnValueSelection()
-        action = {
-            'type': 'turn',
-            'value': int(value)
-        }
-
-        actions.append(action)
-    elif actionType == 'run_motor':
-        name = await motorNameSelection()
-        value = await motorValueSelection(name)
-        action = {
-            'type': 'run_motor',
-            'name': name,
-            'isDual': True if configuration['motors']['other'][name]['type'] == 'dual' else False,
-            'motors': configuration['motors']['other'][name]['motors'],
-            'value': int(value)
-        }
-
-        actions.append(action)
+    actionType = actionSelection()
 
 
-async def run():
+def run():
     for alwaysRun in configuration['always_run']:
         action = {
             'type': 'always_run',
@@ -390,11 +417,12 @@ async def run():
 
             break
 
-        await main()
+        main()
+
 
 if __name__ == '__main__':
     print('Starting autonomous creator...')
     print('Press LD to generate code and exit')
     print('\n----------------------------------\n')
-    asyncio.run(run())
+    run()
     print('----------------------------------\n')
