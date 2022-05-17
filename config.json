@@ -1,0 +1,17 @@
+{
+    "default_power": 100,
+    "motors": {
+        "drivetrain": {
+            "left": {
+                "port": 1,
+                "reverse_polarity": false
+            },
+            "right": {
+                "port": 6,
+                "reverse_polarity": true
+            }
+        },
+        "other": {}
+    },
+    "always_run": []
+}

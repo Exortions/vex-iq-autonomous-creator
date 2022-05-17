@@ -1,0 +1,38 @@
+{
+    "default_power": 100,
+    "motors": {
+        "drivetrain": {
+            "left": {
+                "port": 1,
+                "reverse_polarity": false
+            },
+            "right": {
+                "port": 6,
+                "reverse_polarity": true
+            }
+        },
+        "other": {
+            "catapult": {
+                "name": "catapult",
+                "is_dual": true,
+                "motors": [
+                    {
+                        "port": 1,
+                        "reverse_polarity": false
+                    },
+                    {
+                        "port": 2,
+                        "reverse_polarity": true
+                    }
+                ]
+            }
+        }
+    },
+    "always_run": [
+         {
+             "port": 5,
+             "reverse_polarity": false,
+             "power": 100
+         }
+    ]
+}
