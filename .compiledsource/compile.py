@@ -3,11 +3,26 @@ import json
 OUTPUT_FILE = 'build/autonomous.py'
 INPUT_FILE = 'config/input.json'
 CONFIG_FILE = 'config.json'
-
 class Compiler:
     def __init__(self) -> None:
+        self.prep_input()
+
         self.load_config()
         self.load_input()
+
+    def prep_input(self) -> None:
+        text = ''
+
+        with open(INPUT_FILE, 'r') as f:
+            text = f.read()
+        
+        text = text.replace('\'', '"')
+        text = text.replace('True', 'true')
+        text = text.replace('False', 'false')
+        text = text.replace('None', 'null')
+
+        with open(INPUT_FILE, 'w') as f:
+            f.write(text)
 
     def load_config(self) -> None:
         with open(CONFIG_FILE, 'r') as f:
@@ -18,7 +33,7 @@ class Compiler:
             self.actions = json.load(f)
 
     def convert_move_action(self, value: int) -> str:
-        return f'drivetrain.drive_until({int(self.config["default_power"])}, {value})'
+        return f'drivetrain.drive_until({int(self.config["default_power"])}, {value * 10})'
 
     def convert_turn_action(self, value: int) -> str:
         return f'drivetrain.turn_until({int(self.config["default_power"])}, {value})'
@@ -100,7 +115,7 @@ class Compiler:
         return code
     
     def EOF(self) -> str:
-        return 'while True:\n    vexiq.lcd_write("Auton finisheed")\n    sys.sleep(1)\n    sys.exit()\n'
+        return '\n'
 
     def start(self) -> None:
         code = self.init_code()

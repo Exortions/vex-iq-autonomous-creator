@@ -47,9 +47,10 @@ drivetrain = dt.Drivetrain(left, right, 200, 176)
 
 def save():
     print('Saved actions: \n----------------')
-    print(str(actions).replace('True', 'true').replace('False', 'false').replace('None', 'null').replace('\'', '"'))
+    print(str(actions))
+
     print('----------------')
-    sleep(0.05)
+    sleep(0.25)
 
 def sleep(secs):
     sys.sleep(secs)
